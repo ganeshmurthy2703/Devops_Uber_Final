@@ -102,6 +102,8 @@ export default class Login extends Component {
                     localStorage.setItem('fname', res.data["fname"])
                     localStorage.setItem('lname', res.data["lname"])
                     localStorage.setItem('email', res.data["email"])
+                    localStorage.setItem('access_token',res.data["access_token"])
+                    localStorage.setItem('refresh_token',res.data["refresh_token"])
                     console.log(localStorage.getItem('email'));
                     this.props.history.push('/user');
                 }
