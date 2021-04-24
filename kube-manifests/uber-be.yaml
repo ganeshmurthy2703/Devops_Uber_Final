@@ -25,5 +25,5 @@ spec:
      imagePullPolicy: Always
      name: uber-be
      ports:
-     - containerPort: 80
+     - containerPort: 5000
 
