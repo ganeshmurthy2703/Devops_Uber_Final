@@ -20,11 +20,18 @@ from bson.objectid import ObjectId
 # straight mongo access
 from pymongo import MongoClient
 
+from flask import g
+from flask_bcrypt import Bcrypt
+import jwt
+g = dict()
+
 mongo_client = MongoClient(
-    "")
+    "mongodb+srv://admin:admin@busbookings.27hkg.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 app = Flask(__name__)
 CORS(app)
 basedir = os.path.abspath(os.path.dirname(__file__))
+bcrypt = Bcrypt(app)
+
 
 # def encrypt(password):
     # return "UberBus@"+password+"2021"
@@ -34,7 +41,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 def atlas_connect():
     client = pymongo.MongoClient(
-        "")
+        "mongodb+srv://admin:admin@busbookings.27hkg.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
     db = client.test
 
 
@@ -48,6 +55,57 @@ def tryexcept(requesto, key, default):
     return lhs
 
 ## seconds since midnight
+
+def set_env_var():
+    global g
+    if 'database_url' not in g:
+        g['database_url'] = os.environ.get("DATABASE_URL", 'mongodb://localhost:27017/')
+    if 'secret_key' not in g:
+        g['secret_key'] = os.environ.get("SECRET_KEY", "my_precious_1869")
+    if 'bcrypt_log_rounds' not in g:
+        g['bcrypt_log_rounds'] = os.environ.get("BCRYPT_LOG_ROUNDS", 13)
+    if 'access_token_expiration' not in g:
+        g['access_token_expiration'] = os.environ.get("ACCESS_TOKEN_EXPIRATION", 900)
+    if 'refresh_token_expiration' not in g:
+        g['refresh_token_expiration'] = os.environ.get("REFRESH_TOKEN_EXPIRATION", 2592000)
+
+def encode_token(user_id, token_type):
+    if token_type == "access":
+        seconds = os.environ.get("ACCESS_TOKEN_EXPIRATION", 900)
+    else:
+        seconds =  os.environ.get("REFRESH_TOKEN_EXPIRATION", 2592000)
+
+    payload = {
+        "exp": datetime.utcnow() + timedelta(seconds=seconds),
+        "iat": datetime.utcnow(),
+        "sub": user_id,
+    }
+    return jwt.encode(
+        payload, os.environ.get("SECRET_KEY", "my_precious_1869"), algorithm="HS256"
+    )
+
+def decode_token(token):
+    payload = jwt.decode(token, get_env_var("secret_key"), algorithms=["HS256"])
+    #payload = jwt.decode(token, get_env_var("secret_key"))
+    print("decode_token:", payload)
+    return payload["sub"]
+
+def verify_token(token,email):
+    try:
+        userid = decode_token(token)
+
+        if userid is None or not userid == email:
+            print("verify_token() returning False")
+            return False, jsonify(("User unknown!", status.HTTP_401_UNAUTHORIZED))
+        else:
+            print("verify_token() returning True")
+            return True, userid
+
+    except jwt.ExpiredSignatureError:
+        return False, jsonify(("Signature expired. Please log in.", status.HTTP_401_UNAUTHORIZED))
+
+    except jwt.InvalidTokenError:
+        return False, jsonify(("Invalid token. Please log in.", status.HTTP_401_UNAUTHORIZED))
 
 
 def ssm():
@@ -122,12 +180,14 @@ def addBooking():
     date = date.split("T")
     date = date[0]+"T00:00:00.000+00:00"
     operator = request.json['operator']
+
     opcollection = db['operators']
     opObj = {'source': source,
              'destination': destination,
              'date': date,
              'name': operator
              }
+    
     print('Operator')
     print(operator)
     queryOp = opcollection.find_one(opObj)
@@ -241,7 +301,7 @@ def deletebooking():
 # endpoint to login
 
 
-@app.route('/app/signin', methods=["GET", "POST"])
+""" @app.route('/app/signin', methods=["GET", "POST"])
 def signIn():
     print('Inside Sign In')
     email = request.json['email']
@@ -278,7 +338,50 @@ def signIn():
                             "fname": query['fname'],
                             "lname": query['lname'],
                             "email": query['email'],
-                            "isLoggedIn": 'true'}), 200
+                            "isLoggedIn": 'true'}), 200 """
+
+@app.route('/app/signin', methods=["GET", "POST"])
+def signIn():
+    print('Inside Sign In')
+    email = request.json['email']
+    password = request.json['password']
+    # print(password.encode('ascii'))
+    # print(password.encode('utf-8'))
+    print('Email: ', email)
+    queryObject = {"email": email}
+    db = mongo_client['busbookings']
+    users = db['users']
+    query = users.find_one(queryObject)
+    
+    if query == None:
+        return jsonify({'message': 'No user found'}), 200
+    else:
+        # print(query['password'])
+        # checkDBPass = decrypt(query['password'])
+        # print('------------')
+        # print(checkDBPass,"--------",password)
+        print('Inside else of signin')
+        salt = query['password'][:64]
+        stored_password = query['password'][64:]
+        pwdhash = hashlib.pbkdf2_hmac('sha512', 
+                                  password.encode('utf-8'), 
+                                  salt.encode('ascii'), 
+                                  100000)
+        pwdhash = binascii.hexlify(pwdhash).decode('ascii')
+        access_token = encode_token(email, "access")
+        refresh_token = encode_token(email, "refresh")
+        if query['email'] != email:
+            return jsonify({"message": "Incorrect email address"}), 200
+        elif pwdhash != stored_password:
+            return jsonify({"message": "Incorrect password"}), 200
+        else:
+            return jsonify({"message": "User logged in successfully",
+                            "fname": query['fname'],
+                            "lname": query['lname'],
+                            "email": query['email'],
+                            "isLoggedIn": 'true',
+                            "access_token":access_token,
+                            "refresh_token":refresh_token}), 200
 
 
 @app.route('/test', methods=["GET"])
