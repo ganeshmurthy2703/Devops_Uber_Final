@@ -101,7 +101,8 @@ export default class SignUp extends Component {
                 console.log(res);
                 if (res.status === 200) {
                     if (res.data["message"].includes("User added successfully")) {
-                        this.props.history.push('/sign-in');
+                        alert("User Registered Successfully!")
+                        this.props.history.push('/login');
                         // window.location.reload();
                     } else {
                         this.setState({

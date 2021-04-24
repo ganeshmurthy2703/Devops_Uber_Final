@@ -36,7 +36,10 @@ class CustomNavbar extends Component{
         <Nav navbar>
               {this.props.loggedinItems}
             <NavItem>
-              <NavLink href="/viewbookings">View Bookings </NavLink>
+              <NavLink href="/viewbooking">View Bookings</NavLink>
+            </NavItem>
+            <NavItem>
+              <NavLink href="/user">Book another ride!</NavLink>
             </NavItem>
             <NavItem>
               <NavLink href="/logout">Logout</NavLink>

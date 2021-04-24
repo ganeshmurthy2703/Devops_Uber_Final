@@ -21,7 +21,7 @@ from bson.objectid import ObjectId
 from pymongo import MongoClient
 
 mongo_client = MongoClient(
-    "")
+    "mongodb+srv://admin:admin@busbookings.27hkg.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
 app = Flask(__name__)
 CORS(app)
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -34,7 +34,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 def atlas_connect():
     client = pymongo.MongoClient(
-        "")
+        "mongodb+srv://admin:admin@busbookings.27hkg.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
     db = client.test
 
 

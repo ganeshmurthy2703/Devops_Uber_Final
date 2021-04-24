@@ -40,7 +40,7 @@ export const getbookings = booking => {
     }).then(res => {
         console.log('Try')
         console.log(res);
-        return res;
+        return res.data;
     }).catch(res => {
         console.log('Catch')
         console.log(res);
