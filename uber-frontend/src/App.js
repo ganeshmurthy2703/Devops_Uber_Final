@@ -7,6 +7,7 @@ import SignUp from './components/Signup';
 import AppHome from './components/Home';
 import Login from './components/Login';
 import UserHome from './components/UserHome';
+import Logout from './components/Logout';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
        <Route exact path='/register' component={SignUp} />
        <Route exact path='/login' component={Login} />
        <Route exact path='/user' component={UserHome} />
+       <Route exact path="/logout" component={Logout} />
        </Switch>
          
          
